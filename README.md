@@ -1,5 +1,8 @@
 # PHYSICS: A Comprehensive Benchmark for Advanced Physics Reasoning
 
+## Local implementation
+To generate the answer from gpt-oss-20b, set up the environment using `requirements_gptoss.txt` with [uv](https://docs.astral.sh/uv/) and run the shell script `offline_evaluation/get_answer.sh`.
+
 ## Overview
 PHYSICS is a high-level physics problem-solving benchmark designed to assess the reasoning and analytical capabilities of foundation models. The dataset contains 1,297 PhD-qualifying exam problems spanning six fundamental physics disciplines.
 
