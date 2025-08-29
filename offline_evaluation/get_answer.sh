@@ -4,9 +4,9 @@
 set -e
 
 # Set default parameters
-MODEL_NAME="deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+MODEL_NAME="openai/gpt-oss-20b"
 DOWNLOAD_DIR="scratch"
-OUTPUT_DIR="offline_outputs/DeepSeek_R1_Distill_Qwen_32B_outputs"
+OUTPUT_DIR="offline_outputs/gpt_oss_20b_outputs"
 MAX_LINES=1500
 
 # Define the list of dataset paths

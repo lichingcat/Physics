@@ -34,6 +34,15 @@ class VLLMPhysicsPipeline:
                 download_dir=self.download_dir,
                 trust_remote_code=True,
             )
+        if 'gpt-oss' in model_name.lower():
+            self.engine = LLM(
+                model=self.model_name,
+                tensor_parallel_size=torch.cuda.device_count(),
+                kv_cache_dtype="auto",
+                hf_overrides={"architectures": ["LlamaForCausalLM"]},
+                download_dir=self.download_dir,
+                trust_remote_code=True,
+            )
         if ('Llama-3.2-11B-Vision') in model_name:
             # Special handling for Llama-3.2-11B-Vision-Instruct-bnb-4bit
             self.engine = LLM(
@@ -184,6 +193,17 @@ def cleanup_gpu():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run vLLM Physics Pipeline.")
     # Command-line argument parsing
+    parser.add_argument("--model_name", type=str, required=True, help="Model name, e.g. openai/gpt-oss-20b")
+    parser.add_argument("--download_dir", type=str, required=True, help="Directory to download/cache the model")
+    parser.add_argument("--output_dir", type=str, required=True, help="Directory to store outputs")
+    parser.add_argument("--max_lines", type=int, default=30, help="Maximum number of lines to process from each dataset")
+    parser.add_argument(
+        "--dataset_list",
+        type=str,
+        nargs="+",  # allows multiple datasets
+        required=True,
+        help="List of dataset .jsonl files"
+    )
     args = parser.parse_args()
 
     atexit.register(cleanup_gpu)
