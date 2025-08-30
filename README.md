@@ -3,6 +3,36 @@
 ## Local implementation
 To generate the answer from gpt-oss-20b, set up the environment using `requirements_gptoss.txt` with [uv](https://docs.astral.sh/uv/) and run the shell script `offline_evaluation/get_answer.sh`.
 
+
+Build steps:
+
+```bash
+uv venv --python 3.12 --seed 
+source .venv/bin/activate
+uv pip install --pre vllm==0.10.1+gptoss \
+    --extra-index-url https://wheels.vllm.ai/gpt-oss/ \
+    --extra-index-url https://download.pytorch.org/whl/nightly/cu128 \
+    --index-strategy unsafe-best-match --no-cache
+
+uv pip install matplotlib tqdm
+```
+
+Sanity check to make sure vllm runs properly
+```bash 
+vllm serve openai/gpt-oss-20b
+```
+
+Run steps (pwd: project root): (runs both models)
+```bash
+./offline_evaluation/gpt-oss.sh
+```
+
+Issues I (nithinc) ran into:
+
+- mxfp4 layers not found: Wrong version of vllm installed
+- gpu memory non enough: could be the bug where the script was previously trying to build a second vllm engine. if the serve command passes this is a script level issue since default args are the same between serve and `vllm.LLM`.
+- Flash attention 3 not available / sync engines only supported in FA3: You need >H100 for FA3. Instead set env `VLLM_ATTENTION_BACKEND=TRITON_ATTN_VLLM_V1`.
+
 ## Overview
 PHYSICS is a high-level physics problem-solving benchmark designed to assess the reasoning and analytical capabilities of foundation models. The dataset contains 1,297 PhD-qualifying exam problems spanning six fundamental physics disciplines.
 
