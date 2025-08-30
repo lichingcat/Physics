@@ -24,7 +24,8 @@ vllm serve openai/gpt-oss-20b
 
 Run steps (pwd: project root): (runs both models)
 ```bash
-./offline_evaluation/gpt-oss.sh
+./offline_evaluation/gpt-oss-20b.sh
+./offline_evaluation/gpt-oss-120b.sh
 ```
 
 Issues I (nithinc) ran into:
