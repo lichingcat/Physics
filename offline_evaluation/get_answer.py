@@ -1,6 +1,5 @@
 import os
 import json
-import torch
 import sys
 import atexit
 import traceback
@@ -9,41 +8,39 @@ from vllm import LLM, SamplingParams
 import argparse
 
 
+
 class VLLMPhysicsPipeline:
-    def __init__(self, model_name, download_dir, output_dir, max_lines=30):
+    def __init__(self, model_name, download_dir, output_dir, max_lines=30, tp=1):
         self.model_name = model_name
         self.download_dir = download_dir
         self.output_dir = output_dir
         self.max_lines = max_lines
-        
+        print(f"Initializing vLLM engine for {model_name} with tp={tp} and download_dir={self.download_dir}")
         # Initialize vLLM engine
         if 'Deepseek-V2' in model_name:
             self.engine = LLM(
                 model=self.model_name,
-                tensor_parallel_size=torch.cuda.device_count(),
+                tensor_parallel_size=tp,
                 kv_cache_dtype="auto",
                 hf_overrides={"architectures": ["DeepseekVLV2ForCausalLM"]},
                 download_dir=self.download_dir,
             )
-        if 'Baichuan' in model_name:
+        elif 'Baichuan' in model_name:
             self.engine = LLM(
                 model=self.model_name,
-                tensor_parallel_size=torch.cuda.device_count(),
+                tensor_parallel_size=tp,
                 kv_cache_dtype="auto",
                 hf_overrides={"architectures": ["BaiChuanForCausalLM"]},
                 download_dir=self.download_dir,
                 trust_remote_code=True,
             )
-        if 'gpt-oss' in model_name.lower():
+        elif 'gpt-oss' in model_name.lower():
             self.engine = LLM(
                 model=self.model_name,
-                tensor_parallel_size=torch.cuda.device_count(),
-                kv_cache_dtype="auto",
-                hf_overrides={"architectures": ["LlamaForCausalLM"]},
+                tensor_parallel_size=tp,
                 download_dir=self.download_dir,
-                trust_remote_code=True,
             )
-        if ('Llama-3.2-11B-Vision') in model_name:
+        elif ('Llama-3.2-11B-Vision') in model_name:
             # Special handling for Llama-3.2-11B-Vision-Instruct-bnb-4bit
             self.engine = LLM(
                 model=self.model_name,
@@ -55,10 +52,10 @@ class VLLMPhysicsPipeline:
                 trust_remote_code=True,
                 pipeline_parallel_size=2,
             )
-        if ('mistral') in model_name:
+        elif ('mistral') in model_name:
             self.engine = LLM(
                 model=self.model_name,
-                tensor_parallel_size=torch.cuda.device_count(),
+                tensor_parallel_size=tp,
                 kv_cache_dtype="auto",
                 max_model_len=4096,
                 download_dir=self.download_dir,
@@ -68,12 +65,11 @@ class VLLMPhysicsPipeline:
         else:
             self.engine = LLM(
                 model=self.model_name,
-                tensor_parallel_size=torch.cuda.device_count(),
+                tensor_parallel_size=tp,
                 kv_cache_dtype="auto",
                 download_dir=self.download_dir,
                 trust_remote_code=True,
             )
-        
         print("vLLM engine initialized.")
 
     def ask_llm_with_retries(self, llm_messages_batch, max_retries=3):
@@ -103,7 +99,8 @@ class VLLMPhysicsPipeline:
             except Exception as e:
                 print(f"Batch attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
-                    torch.cuda.empty_cache()
+                    # torch.cuda.empty_cache()
+                    pass
         print("All attempts to get valid responses from vLLM failed.")
         return [None] * len(llm_messages_batch)
 
@@ -185,7 +182,7 @@ def cleanup_gpu():
     """Function to clear GPU memory."""
     try:
         print("Releasing GPU memory...")
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
         print("GPU memory released successfully.")
     except Exception as e:
         print(f"Failed to release GPU memory: {e}")
@@ -197,6 +194,7 @@ if __name__ == "__main__":
     parser.add_argument("--download_dir", type=str, required=True, help="Directory to download/cache the model")
     parser.add_argument("--output_dir", type=str, required=True, help="Directory to store outputs")
     parser.add_argument("--max_lines", type=int, default=30, help="Maximum number of lines to process from each dataset")
+    parser.add_argument("--tp", type=int, default=1, help="Tensor parallel size")
     parser.add_argument(
         "--dataset_list",
         type=str,
@@ -214,6 +212,7 @@ if __name__ == "__main__":
             download_dir=args.download_dir,
             output_dir=args.output_dir,
             max_lines=args.max_lines,
+            tp=args.tp,
         )
         pipeline.process_jsonl_list(args.dataset_list)
 
